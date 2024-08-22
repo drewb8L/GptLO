@@ -1,12 +1,16 @@
 using Scratch.InventorySystem.Factories;
+using Scratch.InventorySystem.Services;
 
 namespace Scratch.InventorySystem;
 
+// TODO: Refactor to use service
 public class Inventory
 {
-    public Inventory(string inventoryName)
+    private readonly IProductService _productService;
+    public Inventory(string inventoryName, IProductService productService)
     {
         InventoryName = inventoryName;
+        _productService = productService;
     }
 
     public string InventoryName { get; set; }
@@ -15,8 +19,9 @@ public class Inventory
 
     public int ProductCount => Products.Count;
 
-    public void AddProduct(IProduct? product)
+    public IProduct AddProduct(ProductType type, string[]productParams)
     {
+        var product = _productService.AddProduct(type, productParams);
         if (product is null)
         {
             throw new NullReferenceException("Product is null.");
@@ -24,6 +29,7 @@ public class Inventory
         Products.Add(product);
         
         Console.WriteLine($"{product.Name} added to {InventoryName}");
+        return product;
     }
 
     public void AddProducts(List<IProduct> products)
@@ -39,17 +45,19 @@ public class Inventory
         }
     }
 
-    public void UpdateProduct(string sku, string name = "", decimal price = -1.0m, int quantity = -1)
+    public bool UpdateProduct(string sku, string name = "", int quantity = -1,decimal price = -1.0m)
     {
         var product = Products.Find(pr => pr.ProductIdentifier.ToString() == sku);
         if (product is null)
         {
-            throw new NullReferenceException("Product is null.");
+            Console.WriteLine("Product is null.");
+            return false;
         }
 
         if (name == "" && price == -1.0m && quantity == -1)
         {
-            throw new ArgumentException("Arguments have not been provided.");
+            Console.WriteLine("Arguments have not been provided.");
+            return false;
         }
 
         if (name != "")
@@ -63,16 +71,20 @@ public class Inventory
         }
         else
         {
-            throw new ArgumentException("Price can not be negative.");
+            
+            Console.WriteLine("Price can not be negative.");
+            return false;
         }
         
         if (quantity >= 0.0m)
         {
             product.Quantity = quantity;
+            return true;
         }
         else
         {
-            throw new ArgumentException("Quantity can not be negative!");
+            Console.WriteLine("Quantity can not be negative!");
+            return false;
         }
         
         // product = Products.Find(pr => pr.ProductIdentifier.ToString() == sku);

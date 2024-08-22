@@ -3,7 +3,7 @@ using Scratch.InventorySystem;
 using Scratch.InventorySystem.Factories;
 using Scratch.InventorySystem.FactoryPattern;
 using Scratch.InventorySystem.Commands;
-
+using Scratch.InventorySystem.Services;
 
 
 Console.WriteLine("Welcome to Inventory Manager");
@@ -11,8 +11,10 @@ Console.WriteLine("Welcome to Inventory Manager");
 var exit = false;
 
 Inventory inventory = null;
-IProduct product = null;
+IProduct? product = null;
 List<IProduct> products = new();
+
+IProductService _productService = new ProductService();
 
 void Menu()
 {
@@ -25,6 +27,7 @@ void Menu()
         Console.WriteLine("\tf - Find a Product by sku");
         Console.WriteLine("\tu - Update a Product");
         Console.WriteLine("\tr - Remove a Product");
+        Console.WriteLine("\tq - Quit program");
         Console.Write("Your option?  ");
         
         var choice = Console.ReadLine();
@@ -45,7 +48,7 @@ void Menu()
                 break;
             case "a":
                 Console.WriteLine("Creating new Product");
-                ProductMenu();
+                AddProductMenu();
                 break;
             case "f":
                 Console.WriteLine("Find a Product");
@@ -56,76 +59,138 @@ void Menu()
             case "r":
                 Console.WriteLine("Remove a Product");
                 break;
+            case "q":
+                Console.WriteLine("Exiting Program");
+                exit = true;
+                break;
             default:
                 Console.WriteLine("Invalid Choice");
                 break;
         }
         
     }
+    
 }
+Menu();
+
+// string[] productArray = { "Product Name", "125","10.67" };
+// string[] perishableArray = { "Perishable Product", "231", "22.90", new DateOnly(2024,08, 31).ToString() };
+//
+// var newProduct = ProductService.GetProduct(ProductType.Standard, productArray);
+// var perishable = ProductService.GetProduct(ProductType.Perishable, perishableArray);
+// Console.WriteLine(newProduct.ToString());
+// Console.WriteLine(perishable.ToString());
+
+
 
 void InventoryMenu()
 {
-    var exit = false;
-    while (!exit)
+    var exitMenu = false;
+    
+    while (!exitMenu)
     { 
         Console.WriteLine("Name your Inventory: ");
         var name = Console.ReadLine();
-        if (name != string.Empty)
+        if (name == string.Empty)
         {
-            inventory = new Inventory(name!.Trim());
-            exit = true;
-            break;
+            Console.WriteLine("Please provide an Inventory name");
+            continue;
         }
-        Console.WriteLine("Please provide an Inventory name");
+        inventory = new Inventory(name!.Trim(), new ProductService());
+        exitMenu = true;
     }
 }
 
-void ProductMenu()
+void AddProductMenu()
 {
-    var exit = false;
-    string name = "";
-    int quantity = 0;
-    decimal price = 0.0m;
-    
-    while (!exit)
+    var exitMenu = false;
+    ProductType productType;
+    var expDate = new DateOnly();
+    while (exitMenu == false)
     { 
-        //TODO: YEET this code!
         Console.WriteLine("Create a new Product: ");
+        Console.WriteLine("Is this a perishable product? Enter for no or y for yes: ");
+        var type = Console.ReadLine().Trim().ToLower();
+        if (type == "y")
+        {
+            Console.WriteLine("Enter an expiration date in yyyy/mm/dd format");
+            var date = Console.ReadLine();
+            // TODO: check date string   
+        }
+        
         Console.WriteLine("Enter the products Name Quantity and Price: ");
         var properties = Console.ReadLine();
-        if (properties != string.Empty)
+        var productParams = properties.Split(" ");
+        
+        if (properties == string.Empty)
         {
-            var results = properties.Split(" ");
+            Console.WriteLine(" No product data provided. Please enter a product");
+            continue;
+        }
+        // TODO: Add selection for product type
+        product = _productService.AddProduct(ProductType.Standard, productParams);
+        inventory?.AddProduct(, product);
 
-            if (name != string.Empty)
+        if (product == null)
+        {
+            Console.WriteLine("There was an error trying to add this product, try again.");
+            continue;
+        }
+        exitMenu = true;
+        
+    }
+
+    void UpdateProductMenu()
+    {
+        var exitMenu = false;
+        while (!exitMenu)
+        {
+            Console.WriteLine("Update a Product: ");
+            Console.WriteLine("Enter the product SKU: ");
+            var sku = Console.ReadLine();
+            if (sku == String.Empty)
             {
-                name = results[0];
-            }
-            else if(results[1] is int)
-            {
-                quantity = int.Parse(results[1]);
-            }
-            else if (results[2] is decimal)
-            {
-                price = decimal.Parse(results[2]);
-            }
-            else
-            {
-                Console.WriteLine("Incorrect params");
+                Console.WriteLine("Please enter a sku");
                 continue;
             }
-            
-           
-        }
-        product = ProductFactory.CreateProduct(name, quantity, price);
-        inventory?.AddProduct(product);
 
-        exit = true;
-        break;
+            Console.WriteLine("Enter new name, or press enter to skip: ");
+            var name = Console.ReadLine();
+
+            Console.WriteLine("Enter new quantity, or press enter to ship: ");
+            var quantity = Console.ReadLine();
+
+            Console.WriteLine("Enter new price, or press enter to skip: ");
+            var price = Console.ReadLine();
+
+            if (name == string.Empty && quantity == string.Empty && price == string.Empty)
+            {
+                Console.WriteLine("No values entered, returning to main menu.");
+                exitMenu = true;
+            }
+
+            int number;
+            var isQuantityAnInt = int.TryParse(quantity, out number);
+            if (!isQuantityAnInt)
+            {
+                Console.WriteLine("Not a valid quantity");
+                
+            }
+
+            decimal priceNumber;
+            var isPriceADecimal = decimal.TryParse(price, out priceNumber);
+            if (!isPriceADecimal)
+            {
+                Console.WriteLine("Not a valid price");
+            }
+
+            var updateProduct = _productService.UpdateProduct(sku, name, quantity, price);
+
+
+        }
         
-        Console.WriteLine("Please provide an Inventory name");
     }
 }
 
-Menu();
+
+
