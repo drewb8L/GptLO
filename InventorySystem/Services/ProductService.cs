@@ -14,7 +14,6 @@ public class ProductService : IProductService
     private static int quantity;
     private static decimal price;
     private static DateOnly expiration;
-    private static IProduct _product;
     private static bool _isValidProduct;
 
     static void ParseInput(Dictionary<string, string> pd)
@@ -64,7 +63,7 @@ public class ProductService : IProductService
     }
 
 
-    public IProduct AddProduct(ProductType type, string[]productParams )
+    public IProduct CreateProduct(ProductType type, string[]productParams )
     {
         ValidateProduct(productParams);
         
@@ -81,8 +80,9 @@ public class ProductService : IProductService
         }
     }
 
-    public bool RemoveProduct()
+    public bool RemoveProduct(string sku)
     {
+        
         return false;
     }
     

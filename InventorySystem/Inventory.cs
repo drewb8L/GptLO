@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Scratch.InventorySystem.Factories;
 using Scratch.InventorySystem.Services;
 
@@ -6,7 +7,7 @@ namespace Scratch.InventorySystem;
 // TODO: Refactor to use service
 public class Inventory
 {
-    private readonly IProductService _productService;
+    private readonly IProductService _productService; 
     public Inventory(string inventoryName, IProductService productService)
     {
         InventoryName = inventoryName;
@@ -19,34 +20,40 @@ public class Inventory
 
     public int ProductCount => Products.Count;
 
-    public IProduct AddProduct(ProductType type, string[]productParams)
+    public void AddProduct(ProductType type, string[]productParams)
     {
-        var product = _productService.AddProduct(type, productParams);
-        if (product is null)
+        try
         {
-            throw new NullReferenceException("Product is null.");
+            var product = _productService.CreateProduct(type, productParams);
+            
+            Products.Add(product);
+          
+            Console.WriteLine($"{product.Name} added to {InventoryName}");
         }
-        Products.Add(product);
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
         
-        Console.WriteLine($"{product.Name} added to {InventoryName}");
-        return product;
     }
 
-    public void AddProducts(List<IProduct> products)
+    public bool AddProducts(List<IProduct> products)
     {
-        if (products is null)
+        try
         {
-            throw new NullReferenceException("Product is null.");
+            Products.AddRange(products);
+            return true;
         }
-
-        foreach (var product in products)
+        catch( NullReferenceException e)
         {
-            Products.Add(product);
+            Console.WriteLine(e);
+            return false;
         }
     }
 
     public bool UpdateProduct(string sku, string name = "", int quantity = -1,decimal price = -1.0m)
     {
+        //TODO: Maybe refactor to try/catch 
         var product = Products.Find(pr => pr.ProductIdentifier.ToString() == sku);
         if (product is null)
         {
@@ -92,26 +99,46 @@ public class Inventory
         
     }
 
-    public void RemoveProduct(IProduct product)
+    public bool RemoveProduct(string sku)
     {
-        if (product is null)
+        try
         {
-            throw new NullReferenceException("Product is null.");
-        }
+            var product = Products.Find(p =>
+                sku == p.ProductIdentifier.ToString());
 
-        var productToRemove = Products.Find(p => 
-            p.ProductIdentifier == product.ProductIdentifier);
-        if (productToRemove is null)
-        {
-            throw new NullReferenceException("This product does not exist");
+            if (product is not null)
+            {
+                Products.Remove(product);
+                Console.WriteLine($"{product.Name} removed from {InventoryName}");
+            }
+
+            return true;
         }
-        
-        Products.Remove(productToRemove);
-        Console.WriteLine($"Removed {product.Name} from Inventory");
+        catch (NullReferenceException e)
+        {
+            Console.WriteLine(e.Message);
+            return false;
+        }
     }
 
+    public bool FindProduct(string sku)
+    {
+        try
+        {
+            var product = Products.Find(pr => pr.ProductIdentifier.ToString() == sku);
+            Console.WriteLine(product?.ToString());
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+        
+    }
     public void DisplayAllProducts()
     {
+        // TODO: Update discount on display
         Console.WriteLine($"{InventoryName}'s Products:");
         Console.WriteLine($"Product Count: {Products.Count}");
         foreach (var product in Products)
